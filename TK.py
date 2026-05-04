@@ -4,6 +4,11 @@ import tkinter as tk
 import webbrowser
 import socket
 import tkinter.ttk as ttk
+import tkinter.messagebox
+
+def clear_results():
+    for widget in inner_frame.winfo_children():
+        widget.destroy()
 
 selected_mode = None
 _poll_job = None
@@ -13,6 +18,7 @@ top.title("域名查询工具")
 top.resizable(False,False)
 top.geometry("250x500")
 top.config(bg="#F0F0F0")
+top.iconbitmap("ICO/favicon.ico")
 
 button_frame = tkinter.Frame(top)
 button_frame.pack(side=tkinter.TOP, anchor=tkinter.N, pady=10)
@@ -29,8 +35,14 @@ Button3.pack(side=tkinter.LEFT, padx=10)
 button_input = tkinter.Frame(top)
 button_input.pack(side=tkinter.TOP, anchor=tkinter.N, pady=10)
 
-progress = ttk.Progressbar(top, length=220, mode="determinate")
-progress.pack(side=tkinter.TOP, pady=(0,5))
+progress_frame = tkinter.Frame(top)
+progress_frame.pack(side=tkinter.TOP, fill=tkinter.X, padx=10, pady=(0,5))
+
+progress = ttk.Progressbar(progress_frame, length=140, mode="determinate")
+progress.pack(side=tkinter.LEFT, fill=tkinter.X, padx=(10,0))
+
+Button5 = tkinter.Button(progress_frame, text="  清除  ", font=("微软雅黑", 8), width=6, command=clear_results)
+Button5.pack(side=tkinter.RIGHT, padx=(0,12))
 
 TwoInput = tkinter.Entry(button_input,width=19)
 Button4 = tkinter.Button(button_input,text="  停止  ")
@@ -54,6 +66,20 @@ inner_frame = tkinter.Frame(canvas, bg="#f0f0f0")
 inner_frame.bind("<Configure>", lambda e: canvas.config(scrollregion=canvas.bbox("all")))
 canvas_window = canvas.create_window((0,0), window=inner_frame, anchor="nw")
 
+#进度条改颜色
+style = ttk.Style()
+style.theme_use('clam')
+style.configure("green.Horizontal.TProgressbar", background='#4a90d9', troughcolor='#e0e0e0')
+style.configure("red.Horizontal.TProgressbar", background='#e74c3c', troughcolor='#e0e0e0')
+
+#完成提示函数
+def finish_progress():
+    top.after(0, _finish_progress)
+
+def _finish_progress():
+    progress.configure(style="red.Horizontal.TProgressbar")
+    tkinter.messagebox.showinfo("完成", "域名查询已完成")
+
 def on_canvas_configure(event):
     canvas.itemconfig(canvas_window, width=event.width)
 
@@ -63,6 +89,7 @@ def init_progress(max_value):
 def _init_progress(max_value):
     progress['maximum'] = max_value
     progress['value'] = 0
+    progress.configure(style="green.Horizontal.TProgressbar")
 
 def update_progress(current):
     top.after(0, lambda: progress.configure(value=current))
@@ -124,6 +151,10 @@ def reset_to_default():
     selected_mode = None
     stop_progress_poll()
     stop_flash()
+    TwoInput.config(state=tk.NORMAL)
+    TwoInput.delete(0, tk.END)
+    progress.configure(style="green.Horizontal.TProgressbar")
+    reset_progress()
     Button1.config(relief=tk.RAISED, bg="#F0F0F0", fg="black")
     Button2.config(relief=tk.RAISED, bg="#F0F0F0", fg="black")
     Button3.config(relief=tk.RAISED, bg="#F0F0F0", fg="black")
@@ -133,11 +164,11 @@ def reset_to_default():
 flash_job = None
 def flash_start_button():
     global flash_job
-    current_bg = Button3.cget("bg")
-    if current_bg == "#00A241":
-        Button3.config(bg="#7cfc00", fg="#ffffff")
+    current_bg = Button3.cget("bg").lower() if isinstance(Button3.cget("bg"), str) else ""
+    if current_bg == "#32d746":
+        Button3.config(bg="#065927", fg="#ffffff")
     else:
-        Button3.config(bg="#00a241", fg="#ffffff")
+        Button3.config(bg="#32d746", fg="#ffffff")
     flash_job = top.after(500, flash_start_button)
 def stop_flash():
     global flash_job

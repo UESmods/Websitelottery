@@ -1,8 +1,9 @@
+import TK
 import random
 import socket
 import threading
 from concurrent.futures import ThreadPoolExecutor
-import TK
+import tkinter as tk
 
 socket.setdefaulttimeout(3)  # DNS解析最长等待3秒
 
@@ -59,10 +60,19 @@ suffixes = [
 ]
 
 running = False
+monkey_name = ""
 
 #并发处理
 progress_counter = 0
 progress_lock = threading.Lock()
+
+def on_monkey_click():
+    name = infinite_Monkey()
+    TK.select_mode("猴子模式")
+    TK.TwoInput.config(state=tk.NORMAL)
+    TK.TwoInput.delete(0, tk.END)
+    TK.TwoInput.insert(0, name)
+    TK.TwoInput.config(state=tk.DISABLED)
 
 def check_single_domain(name, suffix):
     global running, progress_counter
@@ -82,11 +92,8 @@ def infinite_Monkey():
 def get_domain_name():
     if TK.selected_mode is None:
         return None
-    if TK.selected_mode == "猴子模式":
-        return infinite_Monkey()
-    else:
-        name = TK.TwoInput.get().strip()
-        return name if name else None
+    name = TK.TwoInput.get().strip()
+    return name if name else None
         
 def stop_query():
     global running
@@ -97,6 +104,7 @@ def on_start_click():
     name = get_domain_name()
     if name is None:
         return
+    TK.TwoInput.config(state=tk.DISABLED)
     TK.flash_start_button()
     threading.Thread(target=run_query, args=(name,), daemon=True).start()
 
@@ -121,7 +129,10 @@ def run_query(name):
     TK.stop_progress_poll()
     TK.update_progress(progress_counter)
     TK.stop_flash()
+    TK.finish_progress()
+    stop_query()
 
+TK.Button1.config(command=on_monkey_click)
 TK.Button3.config(command=on_start_click)
 TK.Button4.config(command=stop_query)
 TK.canvas.bind("<Enter>", TK.bind_mousewheel)
