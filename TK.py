@@ -5,6 +5,32 @@ import webbrowser
 import socket
 import tkinter.ttk as ttk
 import tkinter.messagebox
+import sys
+import os
+
+def get_resource_path(relative_path):
+    if getattr(sys, 'frozen', False):
+        base_path = sys._MEIPASS
+    else:
+        base_path = os.path.dirname(os.path.abspath(__file__))
+    path = os.path.join(base_path, relative_path)
+    return os.path.normpath(path)
+
+def set_window_icon(window, icon_path):
+    try:
+        from PIL import Image, ImageTk
+        import base64
+        icon_path = get_resource_path(icon_path)
+        with open(icon_path, 'rb') as f:
+            img_data = f.read()
+        import io
+        icon = Image.open(io.BytesIO(img_data))
+        icon = icon.convert('RGBA')
+        photo = ImageTk.PhotoImage(icon)
+        window.iconphoto(True, photo)
+    except Exception as e:
+        print(f"Icon error: {e}")
+        pass
 
 def clear_results():
     for widget in inner_frame.winfo_children():
@@ -18,7 +44,7 @@ top.title("域名查询工具")
 top.resizable(False,False)
 top.geometry("250x500")
 top.config(bg="#F0F0F0")
-top.iconbitmap("ICO/favicon.ico")
+set_window_icon(top, "ICO/256.png")
 
 button_frame = tkinter.Frame(top)
 button_frame.pack(side=tkinter.TOP, anchor=tkinter.N, pady=10)
@@ -32,9 +58,21 @@ Button1.pack(side=tkinter.LEFT, padx=10)
 Button2.pack(side=tkinter.LEFT, padx=10)
 Button3.pack(side=tkinter.LEFT, padx=10)
 
+#DNS超时设置 + 停止按钮（替代原文本框位置，停止不动）
 button_input = tkinter.Frame(top)
 button_input.pack(side=tkinter.TOP, anchor=tkinter.N, pady=10)
 
+tkinter.Label(button_input, text="超时:", font=("微软雅黑", 8)).pack(side=tkinter.LEFT,padx=(25,0))
+timeout_spin = tkinter.Spinbox(button_input, from_=1, to=10, width=3, font=("微软雅黑", 8))
+timeout_spin.delete(0, tk.END)
+timeout_spin.insert(0, "3")
+timeout_spin.pack(side=tkinter.LEFT, padx=(2,5))
+tkinter.Label(button_input, text="秒", font=("微软雅黑", 8)).pack(side=tkinter.LEFT)
+
+Button4 = tkinter.Button(button_input, text="  停止  ")
+Button4.pack(side=tkinter.RIGHT, padx=(40,0))
+
+#进度条行
 progress_frame = tkinter.Frame(top)
 progress_frame.pack(side=tkinter.TOP, fill=tkinter.X, padx=10, pady=(0,5))
 
@@ -44,11 +82,12 @@ progress.pack(side=tkinter.LEFT, fill=tkinter.X, padx=(10,0))
 Button5 = tkinter.Button(progress_frame, text="  清除  ", font=("微软雅黑", 8), width=6, command=clear_results)
 Button5.pack(side=tkinter.RIGHT, padx=(0,12))
 
-TwoInput = tkinter.Entry(button_input,width=19)
-Button4 = tkinter.Button(button_input,text="  停止  ")
+#文本框行（移到进度条下方，只有输入框）
+input_frame = tkinter.Frame(top)
+input_frame.pack(side=tkinter.TOP, anchor=tkinter.N, pady=5)
 
+TwoInput = tkinter.Entry(input_frame, width=29)
 TwoInput.pack(side=tkinter.LEFT, padx=10)
-Button4.pack(side=tkinter.LEFT, padx=10)
 
 #滚动区域
 content_frame = tkinter.Frame(top, bg="#f0f0f0", relief=tk.SUNKEN, bd=2)
@@ -71,6 +110,13 @@ style = ttk.Style()
 style.theme_use('clam')
 style.configure("green.Horizontal.TProgressbar", background='#4a90d9', troughcolor='#e0e0e0')
 style.configure("red.Horizontal.TProgressbar", background='#e74c3c', troughcolor='#e0e0e0')
+
+#自定义DNS解析时间
+def get_timeout():
+    try:
+        return float(timeout_spin.get())
+    except ValueError:
+        return 3
 
 #完成提示函数
 def finish_progress():
@@ -117,7 +163,7 @@ def _add_result_block(domain, ip):
     btn_visit.pack(side=tk.RIGHT)
 
 def query_domain(domain):
-    socket.setdefaulttimeout(3)
+    socket.setdefaulttimeout(get_timeout())
     try:
         ip = socket.gethostbyname(domain)
         add_result_block(domain, ip)

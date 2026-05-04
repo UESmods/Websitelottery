@@ -1,11 +1,8 @@
 import TK
 import random
-import socket
 import threading
 from concurrent.futures import ThreadPoolExecutor
 import tkinter as tk
-
-socket.setdefaulttimeout(3)  # DNS解析最长等待3秒
 
 suffixes = [
     'com', 'org', 'net', 'edu', 'cn', 'io', 'dev', 'info', 'biz', 'co',
